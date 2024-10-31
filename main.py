@@ -99,7 +99,12 @@ def get_from_firestore(request):
         return response, 401
 
     seven_days_ago = datetime.now() - timedelta(days=7)
-    notes_query = db.collection('chrome_extension_notes').where('date_time', '>=', seven_days_ago).get()
+    notes_query = db.collection('chrome_extension_notes') \
+                    .where('date_time', '>=', seven_days_ago) \
+                    .where('google_user_id', google_user_id) \
+                    .order_by('date_time', 'DESCENDING') \
+                    .get()
+    
     notes = [note.to_dict() for note in notes_query]
     response = jsonify({'notes': notes})
     response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
@@ -160,7 +165,9 @@ def write_to_firestore(request):
                 'date_time': date_time_obj,
                 "google_user_id": google_user_id
             })
-        response = jsonify({'message': 'Data successfully written to Firestore'})
+        live_summary = get_live_summary()
+        print(live_summary)
+        response = jsonify({'message': live_summary})
         response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
         return response, 200
     except Exception as e:
@@ -170,5 +177,54 @@ def write_to_firestore(request):
         return response, 500
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+def get_live_summary():
+    """Returns the summary of what has been going on in your day to day for the past week.
+    """
+
+    now = datetime.now()
+    formatted_date = now.strftime("%A, %B %d, %Y")
+    formatted_time = now.strftime("%I:%M %p")  # Formats time as HH:MM AM/PM
+    seven_days_ago = now - timedelta(days=7)
+
+    # Query Firestore collection for documents within the last 7 days, ordered by date_time descending
+    notes_ref = db.collection("chrome_extension_notes")
+    query = notes_ref.where("date_time", ">=", seven_days_ago)\
+                    .where("date_time", "<=", now)\
+                    .order_by("date_time", direction='DESCENDING')
+
+    # Execute query and print results
+    notes_context = ""
+    results = query.stream()
+    for doc in results:
+        d = doc.to_dict()
+        note = f"""
+        Date of Note: {d['date_time']}
+
+        Note:
+        {d['human_note']}
+
+
+        """
+        notes_context += note
+
+    context_summary = summarize_note(notes_context)
+    # Check time of day
+    hour = now.hour
+    if 4 <= hour < 12:
+        greeting = "Good Morning"
+    elif 12 <= hour < 17:
+        greeting = "Good Afternoon"
+    else:
+        greeting = "Good Evening"
+    
+    return f"""
+    *{greeting}*
+    It is {formatted_time} on {formatted_date}
+
+    *Live Context Summary:*
+
+    {context_summary}
+    """
+
+# if __name__ == '__main__':
+#     app.run(debug=True)
