@@ -184,7 +184,7 @@ def get_live_summary():
     now = datetime.now()
     formatted_date = now.strftime("%A, %B %d, %Y")
     formatted_time = now.strftime("%I:%M %p")  # Formats time as HH:MM AM/PM
-    seven_days_ago = now - timedelta(days=7)
+    seven_days_ago = now - timedelta(days=17)
 
     # Query Firestore collection for documents within the last 7 days, ordered by date_time descending
     notes_ref = db.collection("chrome_extension_notes")
