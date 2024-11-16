@@ -1,5 +1,5 @@
 SUMMARIZE_NOTE_PROMPT = """
-You will be given text consisting of my stream of consciousness. These are all notes
+You will be given a series of texts consisting of my stream of consciousness. These are all notes
 that i have typed out.
 
 Organize them by topic and summarize each topic in a way that drives deeper understanding

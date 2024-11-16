@@ -8,50 +8,48 @@ from openai import OpenAI
 api_key = "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"
 client = OpenAI(api_key=api_key)
 
-def summarize_note(note):
+def summarize(notes: list[str]):
     try:
         tool_call_mappings = dict({"create_calendar_event": lambda inp: 0})
+        messages = [{"role": "system", "content": SUMMARIZE_NOTE_PROMPT}] + [{"role": "user", "content": note} for note in notes]
         # Call the OpenAI Chat Completion API
         completion = client.chat.completions.create(
-            model="gpt-4-0613",  # Ensure you're using a model that supports function calling
-            messages=[
-                {"role": "system", "content": SUMMARIZE_NOTE_PROMPT},
-                {"role": "user", "content": note}
-            ],
-            functions=[
-                {
-                    "name": "create_calendar_event",
-                    "description": "Create a Google Calendar event when an event with a start date is mentioned.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "summary": {
-                                "type": "string",
-                                "description": "The title of the calendar event."
-                            },
-                            "description": {
-                                "type": "string",
-                                "description": "A description of the calendar event."
-                            },
-                            "start_date": {
-                                "type": "string",
-                                "description": "The start date and time of the event in ISO 8601 format."
-                            },
-                            "end_date": {
-                                "type": "string",
-                                "description": "The end date and time of the event in ISO 8601 format."
-                            },
-                            "location": {
-                                "type": "string",
-                                "description": "The location where the event will take place."
-                            }
-                        },
-                        "required": ["summary", "description", "start_date", "end_date", "location"],
-                        "additionalProperties": False
-                    }
-                }
-            ],
-            function_call="auto"  # Let the model decide if it should call the function
+            model="gpt-4o",  # Ensure you're using a model that supports function calling
+            messages=messages,
+            # functions=[
+            #     {
+            #         "name": "create_calendar_event",
+            #         "description": "Create a Google Calendar event when an event with a start date is mentioned.",
+            #         "parameters": {
+            #             "type": "object",
+            #             "properties": {
+            #                 "summary": {
+            #                     "type": "string",
+            #                     "description": "The title of the calendar event."
+            #                 },
+            #                 "description": {
+            #                     "type": "string",
+            #                     "description": "A description of the calendar event."
+            #                 },
+            #                 "start_date": {
+            #                     "type": "string",
+            #                     "description": "The start date and time of the event in ISO 8601 format."
+            #                 },
+            #                 "end_date": {
+            #                     "type": "string",
+            #                     "description": "The end date and time of the event in ISO 8601 format."
+            #                 },
+            #                 "location": {
+            #                     "type": "string",
+            #                     "description": "The location where the event will take place."
+            #                 }
+            #             },
+            #             "required": ["summary", "description", "start_date", "end_date", "location"],
+            #             "additionalProperties": False
+            #         }
+            #     }
+            # ],
+            # function_call="auto"  # Let the model decide if it should call the function
         )
 
         response_message = completion.choices[0].message
@@ -68,11 +66,11 @@ def summarize_note(note):
                 return {"summary": None, "function_call": {"name": function_name, "arguments": arguments}}
         else:
             # Return the summary content
-            summary = response_message.get("content", "No summary created.")
-            return {"summary": summary, "function_call": None}
+            summary = response_message.content if hasattr(response_message, 'content') else "No summary created."
+            return summary
     except Exception as e:
         print(e)
-        return note
+        return str(e)
     
 def generate_note_headline(note):
     completion = client.chat.completions.create(

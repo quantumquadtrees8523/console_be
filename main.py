@@ -9,11 +9,16 @@ from google.oauth2 import id_token
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-from note_processor import generate_note_headline, summarize_note
+from note_processor import generate_note_headline, summarize
 
 app = Flask(__name__)
 CORS(app)
 logging.getLogger('flask_cors').level = logging.DEBUG
+
+# gcloud functions deploy write_to_firestore \
+#     --runtime python310 \
+#     --trigger-http \
+#     --allow-unauthenticated
 
 # Initialize Firestore DB
 if not firebase_admin._apps:
@@ -98,9 +103,9 @@ def get_from_firestore(request):
         response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
         return response, 401
 
-    seven_days_ago = datetime.now() - timedelta(days=7)
+    thirty_days_ago = datetime.now() - timedelta(days=30)
     notes_query = db.collection('chrome_extension_notes') \
-                    .where('date_time', '>=', seven_days_ago) \
+                    .where('date_time', '>=', thirty_days_ago) \
                     .where('google_user_id', google_user_id) \
                     .order_by('date_time', 'DESCENDING') \
                     .get()
@@ -109,6 +114,7 @@ def get_from_firestore(request):
     response = jsonify({'notes': notes})
     response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
     return response, 200
+
 
 # Main Cloud Function handler
 @app.route('/write_to_firestore', methods=['POST'])
@@ -155,7 +161,7 @@ def write_to_firestore(request):
         return response, 400
 
     try:
-        ai_response = summarize_note(note)
+        ai_response = summarize([note])
         note_headline = generate_note_headline(note)
         db.collection('chrome_extension_notes').add(
             {
@@ -166,7 +172,7 @@ def write_to_firestore(request):
                 "google_user_id": google_user_id
             })
         live_summary = get_live_summary()
-        print(live_summary)
+        # print(live_summary)
         response = jsonify({'message': live_summary})
         response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
         return response, 200
@@ -184,30 +190,22 @@ def get_live_summary():
     now = datetime.now()
     formatted_date = now.strftime("%A, %B %d, %Y")
     formatted_time = now.strftime("%I:%M %p")  # Formats time as HH:MM AM/PM
-    seven_days_ago = now - timedelta(days=17)
+    thirty_days_ago = now - timedelta(days=30)
 
     # Query Firestore collection for documents within the last 7 days, ordered by date_time descending
     notes_ref = db.collection("chrome_extension_notes")
-    query = notes_ref.where("date_time", ">=", seven_days_ago)\
+    query = notes_ref.where("date_time", ">=", thirty_days_ago)\
                     .where("date_time", "<=", now)\
                     .order_by("date_time", direction='DESCENDING')
 
     # Execute query and print results
-    notes_context = ""
+    notes_context = []
     results = query.stream()
     for doc in results:
         d = doc.to_dict()
-        note = f"""
-        Date of Note: {d['date_time']}
+        notes_context.append(d['human_note'])
 
-        Note:
-        {d['human_note']}
-
-
-        """
-        notes_context += note
-
-    context_summary = summarize_note(notes_context)
+    context_summary = summarize(notes_context)
     # Check time of day
     hour = now.hour
     if 4 <= hour < 12:
@@ -216,15 +214,15 @@ def get_live_summary():
         greeting = "Good Afternoon"
     else:
         greeting = "Good Evening"
-    
-    return f"""
-    *{greeting}*
-    It is {formatted_time} on {formatted_date}
 
-    *Live Context Summary:*
+    return f"""
+    <h1>{greeting}</h1>
+    <h2>It is {formatted_time} on {formatted_date}</h2>
+
+    <h3>Live Context Summary:<h3>
 
     {context_summary}
     """
 
-# if __name__ == '__main__':
-#     app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)
