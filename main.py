@@ -168,8 +168,10 @@ def write_to_firestore(request):
         return response, 400
 
     try:
-        # ai_response = summarize([note])
-        note_headline = openai_interface.generate_note_headline(note)
+        try:
+            note_headline = openai_interface.generate_note_headline(note)
+        except:
+            note_headline = gemini_interface.generate_note_headline(note)
         db.collection('chrome_extension_notes').add(
             {
                 'human_note': note,
@@ -217,7 +219,10 @@ def get_live_summary(google_user_id: str):
         d = doc.to_dict()
         notes_context.append(d['human_note'])
 
-    context_summary = openai_interface.summarize(notes_context)
+    try:
+        context_summary = openai_interface.summarize(notes_context)
+    except:
+        context_summary = gemini_interface.summarize(notes_context)
     # Check time of day
     hour = now.hour
     if 4 <= hour < 12:
