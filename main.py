@@ -61,6 +61,26 @@ def verify_oauth_token(token):
         return None
 
 
+def get_user_timezone(token):
+    # Google API Key: AIzaSyBNY8f3W9Tki1i6OJaxVvLNvBiagfbkdR0
+    try:
+        # Get user info from Google API
+        user_info_url = f"https://www.googleapis.com/oauth2/v2/userinfo?access_token={token}"
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.get(user_info_url, headers=headers)
+
+        if response.status_code == 200:
+            # Get timezone from user's locale
+            timezone_url = f"https://www.googleapis.com/calendar/v3/users/me/settings/timezone"
+            timezone_response = requests.get(timezone_url, headers=headers)
+            if timezone_response.status_code == 200:
+                return timezone_response.json().get('value', 'America/New_York')
+        return 'America/New_York'  # Default fallback
+    except Exception as e:
+        print(f"Error getting user timezone: {e}")
+        return 'America/New_York'  # Default fallback
+
+
 def process_timestamp(timestamp_ms):
     date_time_obj = datetime.fromtimestamp(timestamp_ms / 1000)
     return {
@@ -147,13 +167,13 @@ def write_to_firestore(request):
         return response, 400
 
     try:
-        ai_response = summarize([note])
+        # ai_response = summarize([note])
         note_headline = generate_note_headline(note)
         db.collection('chrome_extension_notes').add(
             {
                 'human_note': note,
                 'note_headline': note_headline,
-                'ai_updated_note': ai_response,
+                # 'ai_updated_note': ai_response,
                 'date_time': date_time_obj,
                 "google_user_id": google_user_id
             })
@@ -171,7 +191,12 @@ def write_to_firestore(request):
 def get_live_summary(google_user_id: str):
     """Returns the summary of what has been going on in your day to day for the past week.
     """
-    now = datetime.now(timezone('America/New_York'))
+    token = request.headers.get('Authorization')
+    if token and token.startswith('Bearer '):
+        token = token[len('Bearer '):]
+    user_tz = get_user_timezone(token)
+    
+    now = datetime.now(timezone(user_tz))
     formatted_date = now.strftime("%A, %B %d, %Y")
     formatted_time = now.strftime("%I:%M %p")  # Formats time as HH:MM AM/PM
     thirty_days_ago = now - timedelta(days=30)
@@ -212,7 +237,6 @@ def get_live_summary(google_user_id: str):
         'date_time': now,
         'google_user_id': google_user_id
     })
-    print("WRITTEN")
     return live_summary
 
 

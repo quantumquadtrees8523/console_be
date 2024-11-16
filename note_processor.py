@@ -18,7 +18,7 @@ def summarize(notes: List[str]):
         for note in notes:
             messages.append({"role": "user", "content": note})
         completion = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=messages,
         )
         response_message: ChatCompletionMessage = completion.choices[0].message
@@ -26,10 +26,11 @@ def summarize(notes: List[str]):
     except Exception as e:
         print(e)
         return str(e)
-    
+
+
 def generate_note_headline(note):
     completion = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-4o-mini",
     messages=[
         {"role": "system", "content": GET_NOTE_HEADLINE},
         {

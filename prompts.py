@@ -1,4 +1,5 @@
 SUMMARIZE_NOTE_PROMPT = """
+<instructions>
 You will be given a series of texts consisting of my stream of consciousness. These are all notes
 that i have typed out.
 
@@ -20,6 +21,12 @@ or to go to yoga/stretch etc...
 You must prioritize my thoughts in your outputs. Do not improvise past the limits described above.
 
 I plan on reading this in the morning in preparation for my day.
+</instructions>
+
+<output>
+    First the Todo List
+    Then the Summary
+</output>
 """
 
 # """
