@@ -10,7 +10,8 @@ from google.oauth2 import id_token
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-from note_processor import generate_note_headline, summarize
+import model_interfaces.gemini as gemini_interface
+import model_interfaces.openai as openai_interface
 
 app = Flask(__name__)
 CORS(app)
@@ -168,7 +169,7 @@ def write_to_firestore(request):
 
     try:
         # ai_response = summarize([note])
-        note_headline = generate_note_headline(note)
+        note_headline = openai_interface.generate_note_headline(note)
         db.collection('chrome_extension_notes').add(
             {
                 'human_note': note,
@@ -182,7 +183,10 @@ def write_to_firestore(request):
         response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
         return response, 200
     except Exception as e:
-        print(f"Error writing to Firestore: {e}")
+        import traceback
+        error_details = traceback.format_exc()
+        # print(f"Error writing to Firestore: {e}")
+        print(f"Detailed Traceback: {error_details}")
         response = jsonify({'error': 'Failed to write data to Firestore'})
         response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
         return response, 500
@@ -213,7 +217,7 @@ def get_live_summary(google_user_id: str):
         d = doc.to_dict()
         notes_context.append(d['human_note'])
 
-    context_summary = summarize(notes_context)
+    context_summary = openai_interface.summarize(notes_context)
     # Check time of day
     hour = now.hour
     if 4 <= hour < 12:

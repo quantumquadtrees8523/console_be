@@ -16,3 +16,5 @@ functions-framework --target=get_from_firestore --port=8080
 functions-framework --target=write_to_firestore --port=8080
 
 
+# Python Version
+pyenv 3.8.12 64-bit ~/.pyenv/versions/3.8.12/bin/python

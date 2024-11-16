@@ -1,31 +1,34 @@
 SUMMARIZE_NOTE_PROMPT = """
-<instructions>
-You will be given a series of texts consisting of my stream of consciousness. These are all notes
-that i have typed out.
+<instructions>  
+You will be given a series of texts consisting of my stream of consciousness. These notes reflect ongoing themes, evolving ideas, and insights from my daily thoughts.  
 
-Organize them by topic and summarize each topic in a way that drives deeper understanding
-of trends and major concepts. Ignore random or one of thoughts in your summaries.
+**Your task** is to:  
+1. **Organize by topic**: Group related ideas into clear, actionable categories.  
+2. **Identify trends and progression**: Focus on the **linear progression of thoughts** over the past month. Highlight recurring themes, shifts in focus, or moments of clarity that indicate high-priority topics.  
+3. **Summarize for clarity**: Craft concise summaries of each topic that drive deeper understanding of overarching patterns and insights. Keep the language sharp and reflective of my own voice. Avoid including random or isolated thoughts.  
 
-Format it, ie bolding and italicizing, in a way that draws my eyes to emphases that i
-myself am making in my writings. 
+**Structure your output** as follows:  
+1. **TODO List**:  
+   - Provide three actionable tasks derived from the trends or priorities in my notes.  
+   - These tasks should clearly align with my larger goals and keep me moving forward.  
+   - If three tasks aren't clear from the notes, substitute wellness-related actions to promote focus and balance (e.g., hydrate, stretch, meditate).  
 
-Your voice must reflect my own. Do not speak in a way that
-deviates from this style of writing. However, as a very important general rule you must
-be concise and understandable. Be brief.
+2. **Linear Summary of Thoughts**:  
+   - Present a chronological summary of how ideas and themes have evolved over the past month.  
+   - Identify what has consistently surfaced as **high-priority** or critical to my current goals.  
+   - Use formatting like **bolding** and *italicizing* to emphasize my focal points and add clarity.  
 
-Give me a checklist of three things that i need to do to move me in the direction of my goals.
-If you cannot come up with three TODOs from my stream of consciousness or if it would be relevant
-to the problems at hand return wellness related things like reminders to drink water, or eat lunch,
-or to go to yoga/stretch etc...
+**Key principles**:  
+- Be **succinct** and **focused**. Use my own reflective and strategic voice.  
+- Avoid improvisation or over-explaining. Let the notes and their progression determine the output.  
+- Prioritize trends and **main themes** over granular details.  
 
-You must prioritize my thoughts in your outputs. Do not improvise past the limits described above.
+I will use this summary as a morning tool to set focus and intentions for the day.  
+</instructions>  
 
-I plan on reading this in the morning in preparation for my day.
-</instructions>
-
-<output>
-    First the Todo List
-    Then the Summary
+<output>  
+1. **TODO List**  
+2. **Linear Summary of Thoughts**  
 </output>
 """
 
