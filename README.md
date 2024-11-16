@@ -12,6 +12,7 @@ gcloud functions deploy get_from_firestore \
 
 
 # Testing
-functions-framework --target=FUNCTION --port=8080
+functions-framework --target=get_from_firestore --port=8080
+functions-framework --target=write_to_firestore --port=8080
 
 

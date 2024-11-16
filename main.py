@@ -1,6 +1,7 @@
 
 import logging 
 from datetime import datetime, timedelta
+from pytz import timezone
 import requests
 import firebase_admin
 
@@ -14,11 +15,6 @@ from note_processor import generate_note_headline, summarize
 app = Flask(__name__)
 CORS(app)
 logging.getLogger('flask_cors').level = logging.DEBUG
-
-# gcloud functions deploy write_to_firestore \
-#     --runtime python310 \
-#     --trigger-http \
-#     --allow-unauthenticated
 
 # Initialize Firestore DB
 if not firebase_admin._apps:
@@ -73,15 +69,15 @@ def process_timestamp(timestamp_ms):
     }
 
 
-@app.route('/get_from_firestore', methods=['GET'])
-def get_from_firestore(request):
-    if request.method == 'OPTIONS':
-        # CORS preflight request - respond with allowed methods and headers
-        response = jsonify({'message': 'CORS preflight successful'})
-        response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
-        response.headers.add('Access-Control-Allow-Methods', 'GET, OPTIONS')
-        response.headers.add('Access-Control-Allow-Headers', 'Authorization, Content-Type')
-        return response
+def handle_cors_preflight(allowed_methods):
+    response = jsonify({'message': 'CORS preflight successful'})
+    response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+    response.headers.add('Access-Control-Allow-Methods', allowed_methods)
+    response.headers.add('Access-Control-Allow-Headers', 'Authorization, Content-Type')
+    return response
+
+
+def handle_request_auth():
     token = request.headers.get('Authorization')
     if not token:
         response = jsonify({'error': 'Missing OAuth token'})
@@ -102,11 +98,24 @@ def get_from_firestore(request):
         response = jsonify({'error': 'Invalid OAuth token'})
         response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
         return response, 401
+        
+    return google_user_id
+
+
+@app.route('/get_from_firestore', methods=['GET'])
+def get_from_firestore(request):
+    if request.method == 'OPTIONS':
+        return handle_cors_preflight('GET, OPTIONS')
+
+    auth_result = handle_request_auth()
+    if isinstance(auth_result, tuple):  # Error response
+        return auth_result
+    google_user_id = auth_result
 
     thirty_days_ago = datetime.now() - timedelta(days=30)
     notes_query = db.collection('chrome_extension_notes') \
                     .where('date_time', '>=', thirty_days_ago) \
-                    .where('google_user_id', google_user_id) \
+                    .where('google_user_id', '==',  google_user_id) \
                     .order_by('date_time', 'DESCENDING') \
                     .get()
     
@@ -120,37 +129,14 @@ def get_from_firestore(request):
 @app.route('/write_to_firestore', methods=['POST'])
 def write_to_firestore(request):
     if request.method == 'OPTIONS':
-        # CORS preflight request - respond with allowed methods and headers
-        response = jsonify({'message': 'CORS preflight successful'})
-        response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
-        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        response.headers.add('Access-Control-Allow-Headers', 'Authorization, Content-Type')
-        return response
+        return handle_cors_preflight('POST, OPTIONS')
+
+    auth_result = handle_request_auth()
+    if isinstance(auth_result, tuple):  # Error response
+        return auth_result
+    google_user_id = auth_result
 
     request_json = request.get_json(silent=True)
-    token = request.headers.get('Authorization')
-    if not token:
-        response = jsonify({'error': 'Missing OAuth token'})
-        response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
-        return response, 401
-
-    # # Remove 'Bearer ' from the token string if present
-    if token.startswith('Bearer '):
-        token = token[len('Bearer '):]
-
-    # # Verify the token and extract the user's Google ID (sub)
-    google_token_info = verify_oauth_token(token)
-    if not google_token_info:
-        response = jsonify({'error': 'No Google token info.'})
-        response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
-        return response, 400
-
-    google_user_id = google_token_info.get('sub')
-    if not google_user_id:
-        response = jsonify({'error': 'Invalid OAuth token'})
-        response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
-        return response, 401
-
     # Check if the request has valid data to write
     if request_json and 'note' in request_json and 'timestamp' in request_json:
         note = request_json['note']
@@ -171,8 +157,7 @@ def write_to_firestore(request):
                 'date_time': date_time_obj,
                 "google_user_id": google_user_id
             })
-        live_summary = get_live_summary()
-        # print(live_summary)
+        live_summary = get_live_summary(google_user_id)
         response = jsonify({'message': live_summary})
         response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
         return response, 200
@@ -183,11 +168,10 @@ def write_to_firestore(request):
         return response, 500
 
 
-def get_live_summary():
+def get_live_summary(google_user_id: str):
     """Returns the summary of what has been going on in your day to day for the past week.
     """
-
-    now = datetime.now()
+    now = datetime.now(timezone('America/New_York'))
     formatted_date = now.strftime("%A, %B %d, %Y")
     formatted_time = now.strftime("%I:%M %p")  # Formats time as HH:MM AM/PM
     thirty_days_ago = now - timedelta(days=30)
@@ -198,7 +182,6 @@ def get_live_summary():
                     .where("date_time", "<=", now)\
                     .order_by("date_time", direction='DESCENDING')
 
-    # Execute query and print results
     notes_context = []
     results = query.stream()
     for doc in results:
@@ -214,8 +197,8 @@ def get_live_summary():
         greeting = "Good Afternoon"
     else:
         greeting = "Good Evening"
-
-    return f"""
+    
+    live_summary = f"""
     <h1>{greeting}</h1>
     <h2>It is {formatted_time} on {formatted_date}</h2>
 
@@ -224,5 +207,15 @@ def get_live_summary():
     {context_summary}
     """
 
+    db.collection('live_summaries').add({
+        'summary': live_summary,
+        'date_time': now,
+        'google_user_id': google_user_id
+    })
+    print("WRITTEN")
+    return live_summary
+
+
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     app.run(debug=True)
