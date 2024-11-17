@@ -16,6 +16,7 @@ from flask_cors import CORS
 from google.cloud.firestore_v1.query_results import QueryResultsList
 from google.cloud.firestore_v1.base_document import DocumentSnapshot
 
+from model_interfaces import generated_content
 import model_interfaces.gemini_interface as gemini_interface
 import model_interfaces.openai_interface as openai_interface
 
@@ -239,7 +240,7 @@ def get_latest_summary(request):
     
     user_tz = get_user_timezone(request)
     current_time = datetime.now(timezone(user_tz))
-    formatted_summary = construct_summary(current_time, summary_object['summary'])
+    formatted_summary = construct_live_summary(current_time, summary_object['summary'])
     
     response = jsonify({'summary': formatted_summary})
     response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
@@ -254,56 +255,22 @@ def query_firestore_for_latest_summary() -> Union[dict, None]:
 def get_live_summary(google_user_id: str) -> str:
     """Generate live summary of user's recent notes."""
     logger.debug("Generating live summary")
-
     user_tz = get_user_timezone(request)
     current_time = datetime.now(timezone(user_tz))
-    thirty_days_ago = current_time - timedelta(days=30)
-
-    # Query recent notes
-    notes_query = (db.collection("chrome_extension_notes")
-                    .where('google_user_id', '==', google_user_id)
-                    .where("date_time", ">=", thirty_days_ago)
-                    .where("date_time", "<=", current_time)
-                    .order_by("date_time", direction='DESCENDING'))
-
-    notes_context = [f"Date: {doc.to_dict()['date_time']} note: {doc.to_dict()['human_note']}" 
-                    for doc in notes_query.stream()]
-
-    # Generate summary using available AI service
-    try:
-        logger.debug("Attempting OpenAI summary")
-        context_summary = openai_interface.summarize(notes_context)
-        model = 'gpt-4o'
-    except:
-        try:
-            logger.debug("Attempting Gemini summary")
-            context_summary = gemini_interface.summarize(notes_context)
-            model = 'gemini-1.5-flash'
-        except:
-            logger.debug("Falling back to latest stored summary")
-            summary_object = query_firestore_for_latest_summary()
-            if summary_object:
-                context_summary = summary_object['summary']
-                model = summary_object['model']
-            else:
-                logger.warning("No summary available")
-                context_summary = "No summary available. Please try again later."
-                model = "N/A"
-
+    context_summary = generated_content.get_live_summary(google_user_id)
     # Store new summary
     db.collection('live_summaries').add({
         'summary': context_summary,
         'date_time': current_time,
         'google_user_id': google_user_id,
-        'model': model,
+        'model': 'Gemini-1.5-Flash',
     })
-
     summary_count = db.collection('live_summaries').where('google_user_id', '==', google_user_id).count().get()[0][0]
     logger.debug(f"Total live summaries stored: {summary_count}")
 
-    return construct_summary(current_time, context_summary)
+    return construct_live_summary(current_time, context_summary)
 
-def construct_summary(current_time: datetime, summary_text: str) -> str:
+def construct_live_summary(current_time: datetime, summary_text: str) -> str:
     """Format summary with current time and greeting."""
     logger.debug("Constructing formatted summary")
     formatted_date = current_time.strftime("%A, %B %d, %Y")
