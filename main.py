@@ -9,9 +9,13 @@ from firebase_admin import credentials, firestore
 from google.oauth2 import id_token
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from google.cloud.firestore_v1.query_results import QueryResultsList
+from google.cloud.firestore_v1.base_document import (
+    DocumentSnapshot,
+)
 
-import model_interfaces.gemini as gemini_interface
-import model_interfaces.openai as openai_interface
+import model_interfaces.gemini_interface as gemini_interface
+import model_interfaces.openai_interface as openai_interface
 
 app = Flask(__name__)
 CORS(app)
@@ -176,7 +180,6 @@ def write_to_firestore(request):
             {
                 'human_note': note,
                 'note_headline': note_headline,
-                # 'ai_updated_note': ai_response,
                 'date_time': date_time_obj,
                 "google_user_id": google_user_id
             })
@@ -194,6 +197,30 @@ def write_to_firestore(request):
         return response, 500
 
 
+@app.route('/get_latest_summary', methods=['GET'])
+def get_latest_summary(request):
+    if request.method == 'OPTIONS':
+        return handle_cors_preflight('GET, OPTIONS')
+
+    auth_result = handle_request_auth()
+    if isinstance(auth_result, tuple):  # Error response
+        return auth_result
+    summary_object = query_firestore_for_latest_summary()
+    if not summary_object:
+        response = jsonify({'summary': "No summary available please try again later (server side error)"})
+        response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+        return response, 404
+    construct_summary(datetime.now(), summary_object['summary'])
+    response = jsonify({'summary': construct_summary(datetime.now(), summary_object['summary'])})
+    response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+    return response, 200
+
+
+def query_firestore_for_latest_summary():
+    most_recent_summary: QueryResultsList[DocumentSnapshot]  = db.collection('live_summaries').order_by('date_time', direction='DESCENDING').limit(1).get()
+    return most_recent_summary[0].to_dict()
+
+
 def get_live_summary(google_user_id: str):
     """Returns the summary of what has been going on in your day to day for the past week.
     """
@@ -203,8 +230,6 @@ def get_live_summary(google_user_id: str):
     user_tz = get_user_timezone(token)
     
     now = datetime.now(timezone(user_tz))
-    formatted_date = now.strftime("%A, %B %d, %Y")
-    formatted_time = now.strftime("%I:%M %p")  # Formats time as HH:MM AM/PM
     thirty_days_ago = now - timedelta(days=30)
 
     # Query Firestore collection for documents within the last 7 days, ordered by date_time descending
@@ -217,37 +242,57 @@ def get_live_summary(google_user_id: str):
     results = query.stream()
     for doc in results:
         d = doc.to_dict()
-        notes_context.append(d['human_note'])
-
+        notes_context.append(f"Date: {d['date_time']} note: {d['human_note']}")
+    
+    context_summary = ''
     try:
         context_summary = openai_interface.summarize(notes_context)
+        model = 'gpt-4o'
     except:
-        context_summary = gemini_interface.summarize(notes_context)
-    # Check time of day
-    hour = now.hour
+        # Refactor this shit
+        try:
+            context_summary = gemini_interface.summarize(notes_context)
+            model = 'gemini-1.5-flash'
+        except:
+            summary_object = query_firestore_for_latest_summary()
+            if summary_object:
+                context_summary = summary_object['summary']
+                model = summary_object['model']
+            else:
+                context_summary = "No summary available. Please try again later."
+                model = "N/A"
+
+        live_summary = construct_summary(now, context_summary)
+    
+
+    db.collection('live_summaries').add({
+        'summary': context_summary,
+        'date_time': now,
+        'google_user_id': google_user_id,
+        'model': model
+    })
+    return live_summary
+
+def construct_summary(datetime_now: datetime, summary_text: str):
+    formatted_date = datetime_now.strftime("%A, %B %d, %Y")
+    formatted_time = datetime_now.strftime("%I:%M %p")  # Formats time as HH:MM AM/PM
+    hour = datetime_now.hour
+
     if 4 <= hour < 12:
         greeting = "Good Morning"
     elif 12 <= hour < 17:
         greeting = "Good Afternoon"
     else:
         greeting = "Good Evening"
-    
-    live_summary = f"""
-    <h1>{greeting}</h1>
-    <h2>It is {formatted_time} on {formatted_date}</h2>
 
-    <h3>Live Context Summary:<h3>
+    return f"""
+    #{greeting}
+    ##It is {formatted_time} on {formatted_date}
 
-    {context_summary}
+    ###Live Context Summary:
+
+    {summary_text}
     """
-
-    db.collection('live_summaries').add({
-        'summary': live_summary,
-        'date_time': now,
-        'google_user_id': google_user_id
-    })
-    return live_summary
-
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)

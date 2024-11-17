@@ -1,35 +1,39 @@
 SUMMARIZE_NOTE_PROMPT = """
-<instructions>  
-You will be given a series of texts consisting of my stream of consciousness. These notes reflect ongoing themes, evolving ideas, and insights from my daily thoughts.  
+Help synthesize and organize a series of chronologically sorted notes into major themes, and provide clear actions you can take today based on these thoughts.
 
-**Your task** is to:  
-1. **Organize by topic**: Group related ideas into clear, actionable categories.  
-2. **Identify trends and progression**: Focus on the **linear progression of thoughts** over the past month. Highlight recurring themes, shifts in focus, or moments of clarity that indicate high-priority topics.  
-3. **Summarize for clarity**: Craft concise summaries of each topic that drive deeper understanding of overarching patterns and insights. Keep the language sharp and reflective of my own voice. Avoid including random or isolated thoughts.  
+You will receive a series of unstructured notes that I have taken over the past several days, each note sorted from newest to oldest. Your goal is to help me organize these thoughts and identify key themes and recurring ideas.
 
-**Structure your output** as follows:  
-1. **TODO List**:  
-   - Provide three actionable tasks derived from the trends or priorities in my notes.  
-   - These tasks should clearly align with my larger goals and keep me moving forward.  
-   - If three tasks aren't clear from the notes, substitute wellness-related actions to promote focus and balance (e.g., hydrate, stretch, meditate).  
+# Steps
+- Identify the major themes from the provided notes and structure these thoughts into a summary.
+- Provide actionable next steps that drive towards the implied goals in the notes.
+- Highlight intriguing or important parts to bring emphasis to them.
 
-2. **Linear Summary of Thoughts**:  
-   - Present a chronological summary of how ideas and themes have evolved over the past month.  
-   - Identify what has consistently surfaced as **high-priority** or critical to my current goals.  
-   - Use formatting like **bolding** and *italicizing* to emphasize my focal points and add clarity.  
+# Output Format
+Your response should be in **Markdown** format and divided into two clearly distinct parts:
 
-**Key principles**:  
-- Be **succinct** and **focused**. Use my own reflective and strategic voice.  
-- Avoid improvisation or over-explaining. Let the notes and their progression determine the output.  
-- Prioritize trends and **main themes** over granular details.  
+1. **To-Do List**: Provide three actionable domestic items I can work on today to move towards my goals. Focus on things like wellness, health, organization, etc... 
+Your voice should be direct and persuading. Do not recommend something TODO if you see indications that the task might have already been completed.
+For example, purchases etc... Prioritize notes that come earlier rather than later in your TODOs. Generally the TODOs should make my life easier and get me closer
+to my goals.
+2. **Summary of Thoughts**: Summarize the primary themes across all notes, emphasizing any particularly interesting or important points by placing them in bold or italics.
 
-I will use this summary as a morning tool to set focus and intentions for the day.  
-</instructions>  
+Example Output:
 
-<output>  
-1. **TODO List**  
-2. **Linear Summary of Thoughts**  
-</output>
+---
+
+**Today's To-Do List:**
+ - [ ] Item 1
+ - [ ] Item 2
+ - [ ] Item 3
+
+**Summary of Thoughts:**
+- **Major Theme 1**: [Description of the theme and underlying thoughts driving it. Highlight anything intriguing.]
+- **Major Theme 2**: [Additional details that reveal this emerging focus. Include any emphasis on what feels noteworthy, using bold for the important phrases].
+- **Other Major Theme**: [Further breakdown into additional recurring ideas throughout the notes].
+
+---
+
+Focus on creating a cohesive narrative from fragmented thoughts, ensuring that important points stand out and actionable items are always clear and attainable.
 """
 
 # """
