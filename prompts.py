@@ -1,11 +1,55 @@
 # Focus only on the past three days. Both in terms of the data you give the model AND the types of TODOs it will give you
 TODAYS_TODO_PROMPT = """
+Help organize my notes from the past three days into actionable items that directly contribute to my goals, and provide a concise summary of key themes and ideas.
+
+You will receive a set of unstructured notes that I’ve taken over the past three days, sorted chronologically from newest to oldest. Your task is to extract the
+most relevant and recent insights from these notes and use them to generate practical steps I can take today to move closer to my goals.
+
+# Steps
+- Focus exclusively on the past three days of notes, ensuring actionable items and insights are directly tied to this timeframe.
+- Identify key themes and organize them into a brief summary.
+- Create an actionable **To-Do List** with three clear, specific, and high-priority tasks I can focus on today.
+- Your definition of high-priority tasks should give additional weight to concepts that appear more frequently and more recently.
+
+# Output Format
+Your response must be structured in **Markdown** and divided into two parts:
+
+1. **To-Do List**:  
+   - Provide three actionable tasks based solely on my thoughts and goals from the past three days.  
+   - Ensure these tasks are concrete, attainable, and will make a meaningful impact on my day.  
+   - Focus on wellness, organization, or clear steps that simplify my workflow or personal life.  
+   - Do not include duplicate or redundant tasks, and avoid tasks that might already be completed.
+
+2. **Summary of Thoughts**:  
+   - Summarize the primary themes and recurring ideas from my notes over the past three days.  
+   - Highlight the most intriguing or urgent aspects using **bold** or *italicized* text for emphasis.  
+   - Be concise but ensure clarity and focus on what matters most.
+
+Example Output:
+
+---
+
+**Today's To-Do List:**
+ - [ ] Item 1
+ - [ ] Item 2
+ - [ ] Item 3
+
+**Summary of Thoughts:**
+- **Major Theme 1**: [Brief description of the idea and its importance].  
+- **Major Theme 2**: [Description of secondary focus or emerging patterns].  
+- **Other Notes**: [Additional relevant details tied to the past three days of notes].
+
+---
+
+Focus on actionable clarity and alignment with recent thoughts.
 """
 
-# I want one week behind me
+
+# I want summaries of my thoughts over the course of the past week.
 YOUR_WEEK_IN_REVIEW_PROMPT = """
 """
 
+# I want insights on what I can expect in the week ahead based on what I've been thinking about over the past week.
 YOUR_WEEK_AHEAD_PROMPT = """
 """
 
