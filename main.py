@@ -1,15 +1,17 @@
 import json
 import logging
 from datetime import datetime, timedelta
+from typing import Union
 from pydantic_core import TzInfo
 from pytz import timezone
 import requests
 import firebase_admin
 import traceback
+import functions_framework
 
 from firebase_admin import credentials, firestore
 from google.oauth2 import id_token
-from flask import Flask, request, jsonify
+from flask import Flask, Request, Response, request, jsonify
 from flask_cors import CORS
 from google.cloud.firestore_v1.query_results import QueryResultsList
 from google.cloud.firestore_v1.base_document import DocumentSnapshot
@@ -18,8 +20,8 @@ import model_interfaces.gemini_interface as gemini_interface
 import model_interfaces.openai_interface as openai_interface
 
 # Initialize Flask app and logging
-app = Flask(__name__)
-CORS(app)
+# app = Flask(__name__)
+# CORS(app)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,7 +32,7 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-def verify_oauth_token(token: str) -> dict | None:
+def verify_oauth_token(token: str) -> Union[dict, None]:
     """Verify Google OAuth token and create user if needed."""
     logger.debug("Verifying OAuth token")
     try:
@@ -64,10 +66,11 @@ def verify_oauth_token(token: str) -> dict | None:
         logger.error(f"Token verification error: {traceback.format_exc()}")
         return None
 
-def get_user_timezone(token: str) -> str:
+def get_user_timezone(request: Request) -> str:
     """Get user's timezone from Google Calendar API."""
     logger.debug("Getting user timezone")
     try:
+        token = request.headers.get("Authorization")
         if token and token.startswith('Bearer '):
             token = token[len('Bearer '):]
 
@@ -98,7 +101,7 @@ def process_timestamp(timestamp_ms: int) -> dict:
         'date_time_obj': date_time_obj
     }
 
-def handle_cors_preflight(allowed_methods: str) -> tuple:
+def handle_cors_preflight(allowed_methods: str) -> Response:
     """Handle CORS preflight requests."""
     logger.debug("Handling CORS preflight")
     response = jsonify({'message': 'CORS preflight successful'})
@@ -107,7 +110,7 @@ def handle_cors_preflight(allowed_methods: str) -> tuple:
     response.headers.add('Access-Control-Allow-Headers', 'Authorization, Content-Type')
     return response
 
-def handle_request_auth() -> str | tuple:
+def handle_request_auth() -> Union[str, tuple]:
     """Authenticate request and return Google user ID."""
     logger.debug("Handling request authentication")
     token = request.headers.get('Authorization')
@@ -134,8 +137,8 @@ def handle_request_auth() -> str | tuple:
         
     return google_user_id
 
-@app.route('/get_from_firestore', methods=['GET'])
-def get_from_firestore(noop):
+@functions_framework.http
+def get_from_firestore(request):
     """Get notes from Firestore for the last 30 days."""
     logger.debug("Getting notes from Firestore")
     if request.method == 'OPTIONS':
@@ -158,7 +161,7 @@ def get_from_firestore(noop):
     response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
     return response, 200
 
-@app.route('/write_to_firestore', methods=['POST'])
+@functions_framework.http
 def write_to_firestore(request):
     """Write note to Firestore and generate summary."""
     logger.debug("Writing to Firestore")
@@ -216,8 +219,8 @@ def write_to_firestore(request):
         response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
         return response, 500
 
-@app.route('/get_latest_summary', methods=['GET'])
-def get_latest_summary(noop):
+@functions_framework.http
+def get_latest_summary(request):
     """Get most recent summary."""
     logger.debug("Getting latest summary")
     if request.method == 'OPTIONS':
@@ -232,12 +235,8 @@ def get_latest_summary(noop):
         response = jsonify({'summary': "No summary available please try again later (server side error)"})
         response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
         return response, 404
-
-    token = request.headers.get('Authorization')
-    if token and token.startswith('Bearer '):
-        token = token[len('Bearer '):]
     
-    user_tz = get_user_timezone(token)
+    user_tz = get_user_timezone(request)
     current_time = datetime.now(timezone(user_tz))
     formatted_summary = construct_summary(current_time, summary_object['summary'])
     
@@ -245,7 +244,7 @@ def get_latest_summary(noop):
     response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
     return response, 200
 
-def query_firestore_for_latest_summary() -> dict | None:
+def query_firestore_for_latest_summary() -> Union[dict, None]:
     """Get most recent summary from Firestore."""
     logger.debug("Querying Firestore for latest summary")
     most_recent_summary = db.collection('live_summaries').order_by('date_time', direction='DESCENDING').limit(1).get()
@@ -254,11 +253,8 @@ def query_firestore_for_latest_summary() -> dict | None:
 def get_live_summary(google_user_id: str) -> str:
     """Generate live summary of user's recent notes."""
     logger.debug("Generating live summary")
-    token = request.headers.get('Authorization')
-    if token and token.startswith('Bearer '):
-        token = token[len('Bearer '):]
-    
-    user_tz = get_user_timezone(token)
+
+    user_tz = get_user_timezone(request)
     current_time = datetime.now(timezone(user_tz))
     thirty_days_ago = current_time - timedelta(days=30)
 
@@ -324,6 +320,3 @@ def construct_summary(current_time: datetime, summary_text: str) -> str:
 
     {summary_text}
     """
-
-if __name__ == '__main__':
-    app.run(debug=True)

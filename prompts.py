@@ -45,13 +45,92 @@ Focus on actionable clarity and alignment with recent thoughts.
 """
 
 
-# I want summaries of my thoughts over the course of the past week.
-YOUR_WEEK_IN_REVIEW_PROMPT = """
-"""
+# # I want summaries of my thoughts over the course of the past week.
+# YOUR_WEEK_IN_REVIEW_PROMPT = """
+# Help summarize and synthesize my notes from the past seven days into recurring themes and clear patterns. Focus on identifying the key ideas that have been shaping my thinking.
 
-# I want insights on what I can expect in the week ahead based on what I've been thinking about over the past week.
-YOUR_WEEK_AHEAD_PROMPT = """
-"""
+# You will receive a set of unstructured notes from the past week, sorted chronologically from newest to oldest. Your goal is to organize and reflect on the trends and connections within these notes, providing a summary that helps me better understand the overarching themes of the week.
+
+# # Steps
+# - Analyze the notes to identify major themes, recurring ideas, and evolving perspectives from the past seven days.
+# - Summarize the most important points clearly, highlighting connections between thoughts across different days.
+# - Emphasize intriguing or impactful patterns to give me a deeper understanding of my week in review.
+
+# # Output Format
+# Your response must be structured in **Markdown** and divided into two parts:
+
+# 1. **Weekly Summary**:  
+#    - Highlight the key themes and recurring patterns that have emerged from my notes this week.  
+#    - Focus on how my thoughts and priorities have evolved over the course of the week.  
+#    - Use **bold** or *italicized* text to emphasize particularly interesting or important points.  
+
+# 2. **Notable Highlights**:  
+#    - List specific ideas or reflections that stand out as important or actionable.  
+#    - These should be concise and derived directly from the weekly themes.  
+
+# Example Output:
+
+# ---
+
+# **Weekly Summary:**
+# - **Major Theme 1**: [Description of how this idea has developed or persisted over the week].  
+# - **Major Theme 2**: [Insights into a secondary trend or shift in focus].  
+# - **Emerging Pattern**: [Key observations about how my thoughts are changing or evolving].
+
+# **Notable Highlights:**
+# 1. [Highlight 1: Specific insight or reflection tied to a theme].  
+# 2. [Highlight 2: Another noteworthy idea or trend].  
+# 3. [Highlight 3: Additional thought worth reflecting on].
+
+# ---
+
+# Focus on clarity, synthesis, and uncovering meaningful insights from the week’s notes.
+# """
+
+
+# # I want insights on what I can expect in the week ahead based on what I've been thinking about over the past week.
+# YOUR_WEEK_AHEAD_PROMPT = """
+# Help project forward into the week ahead by analyzing my notes from the past seven days. Use recurring themes and recent ideas to suggest what I might focus on or encounter in the coming week.
+
+# You will receive a set of unstructured notes from the past week, sorted chronologically from newest to oldest. Your task is to extract key themes and trends, and provide thoughtful insights on how these may influence or shape the week ahead.
+
+# # Steps
+# - Analyze the past week’s notes to identify themes or ideas likely to impact the upcoming week.
+# - Provide a clear and actionable perspective on what I should expect or prioritize in the coming days.
+# - Highlight opportunities, challenges, or areas of focus based on recent patterns.
+
+# # Output Format
+# Your response must be structured in **Markdown** and divided into two parts:
+
+# 1. **Week Ahead Insights**:  
+#    - Provide a thoughtful overview of how my recent thoughts and actions might influence the week ahead.  
+#    - Identify areas where I should direct my focus or anticipate challenges or opportunities.  
+#    - Use **bold** or *italicized* text to emphasize particularly important insights.  
+
+# 2. **Recommended Priorities**:  
+#    - Suggest three key priorities for the week ahead.  
+#    - These should align with themes from the past week and serve as meaningful steps toward my goals.  
+#    - Be clear and actionable in your recommendations.  
+
+# Example Output:
+
+# ---
+
+# **Week Ahead Insights:**
+# - **Anticipated Theme 1**: [Explanation of how this theme will shape my week ahead].  
+# - **Anticipated Theme 2**: [Insights into a secondary focus or possible challenge].  
+# - **Opportunity**: [Highlight of a potential area for growth or action].
+
+# **Recommended Priorities:**
+# 1. [Priority 1: Key focus area or actionable step].  
+# 2. [Priority 2: Another meaningful priority tied to recent patterns].  
+# 3. [Priority 3: Additional step to prepare for or take advantage of opportunities].
+
+# ---
+
+# Focus on actionable insights and preparing for the week ahead based on recent reflections.
+# """
+
 
 SUMMARIZE_NOTE_PROMPT = """
 Help synthesize and organize a series of chronologically sorted notes into major themes, and provide clear actions you can take today based on these thoughts.

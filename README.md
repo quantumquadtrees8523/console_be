@@ -25,8 +25,15 @@ functions-framework --target=write_to_firestore --port=8080
 functions-framework --target=get_latest_summary --port=8080
 
 
-# Python Version
-pyenv 3.8.12 64-bit ~/.pyenv/versions/3.8.12/bin/python
+# Python Version + Virtual Environment
+<!-- pyenv 3.8.12 64-bit ~/.pyenv/versions/3.8.12/bin/python -->
+Switched over to python 3.10 using homebrew
+python@3.10 3.10.15 -> located at /usr/local/opt/python@3.10
+Verify installation version using: `$ /usr/local/opt/python@3.10/bin/python3.10 --version`
+Set virtual environment like this: `$ /usr/local/opt/python@3.10/bin/python3.10 -m venv ~/.console_venv`
+The default venv for this project will be `~/.console_venv`
+Activate by: `$ source ~/.console_venv/bin/activate`
+
 
 # TODO: Create Cloud schedulers
 gcloud scheduler jobs create http write-to-firestore-keep-warm-job \
