@@ -1,3 +1,14 @@
+# Focus only on the past three days. Both in terms of the data you give the model AND the types of TODOs it will give you
+TODAYS_TODO_PROMPT = """
+"""
+
+# I want one week behind me
+YOUR_WEEK_IN_REVIEW_PROMPT = """
+"""
+
+YOUR_WEEK_AHEAD_PROMPT = """
+"""
+
 SUMMARIZE_NOTE_PROMPT = """
 Help synthesize and organize a series of chronologically sorted notes into major themes, and provide clear actions you can take today based on these thoughts.
 
