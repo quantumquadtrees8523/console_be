@@ -151,10 +151,11 @@ def get_from_firestore(request):
 
     thirty_days_ago = datetime.now() - timedelta(days=30)
     notes_query = (db.collection('chrome_extension_notes')
-                  .where('date_time', '>=', thirty_days_ago)
-                  .where('google_user_id', '==', google_user_id)
-                  .order_by('date_time', 'DESCENDING')
-                  .get())
+                    .where('google_user_id', '==', google_user_id)
+                    .where('date_time', '>=', thirty_days_ago)
+                    .where('google_user_id', '==', google_user_id)
+                    .order_by('date_time', 'DESCENDING')
+                    .get())
     
     notes = [note.to_dict() for note in notes_query]
     response = jsonify({'notes': notes})
@@ -193,7 +194,7 @@ def write_to_firestore(request):
 
         # Write to Firestore
         logger.debug("Writing note to Firestore")
-        notes_collection = 'chrome_extension_notes123'
+        notes_collection = 'chrome_extension_notes'
         count_query = db.collection(notes_collection).where('google_user_id', '==', google_user_id).count()
         pre_count = count_query.get()[0][0]
         logger.debug(f"Pre-write note count: {pre_count}")
@@ -260,9 +261,10 @@ def get_live_summary(google_user_id: str) -> str:
 
     # Query recent notes
     notes_query = (db.collection("chrome_extension_notes")
-                  .where("date_time", ">=", thirty_days_ago)
-                  .where("date_time", "<=", current_time)
-                  .order_by("date_time", direction='DESCENDING'))
+                    .where('google_user_id', '==', google_user_id)
+                    .where("date_time", ">=", thirty_days_ago)
+                    .where("date_time", "<=", current_time)
+                    .order_by("date_time", direction='DESCENDING'))
 
     notes_context = [f"Date: {doc.to_dict()['date_time']} note: {doc.to_dict()['human_note']}" 
                     for doc in notes_query.stream()]

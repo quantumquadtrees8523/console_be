@@ -34,6 +34,11 @@ Set virtual environment like this: `$ /usr/local/opt/python@3.10/bin/python3.10 
 The default venv for this project will be `~/.console_venv`
 Activate by: `$ source ~/.console_venv/bin/activate`
 
+## Python Path
+You'll want to set python path in the virtual environment so that everything is viewable. Right now it's being set manually.
+There is a world very soon where you should just update the virtual environment startup script.
+`$ export PYTHONPATH=/Users/suryaduggirala/projects/console_be:$PYTHONPATH`
+
 
 # TODO: Create Cloud schedulers
 gcloud scheduler jobs create http write-to-firestore-keep-warm-job \
