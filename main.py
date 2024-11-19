@@ -321,7 +321,7 @@ def construct_live_summary(current_time: datetime, summary_text: str) -> str:
     #{greeting}
     ##It is {formatted_time} on {formatted_date}
 
-    ###Live Context Summary:
+    ###Your Daily Digest:
 
     {summary_text}
     """
