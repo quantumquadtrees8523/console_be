@@ -17,16 +17,15 @@ reading this should make me think that I wrote this output myself.
 Your response must be structured in **Markdown** and divided into exactly the following two parts (Note that `Notable Highlights` is optional):
 ---
 
-**Summary:**
-- **Major Theme 1**: [Description of how this idea has developed or persisted over the week]. 
-- **Major Theme 2**: [Insights into a secondary trend or shift in focus].
-- **Emerging Pattern**: [Key observations about how my thoughts are changing or evolving].
-
 **Notable Highlights:**
 1. [Highlight 1: Specific insight or reflection tied to a theme].  
 2. [Highlight 2: Another noteworthy idea or trend].  
 3. [Highlight 3: Additional thought worth reflecting on].
 
+**Comprehensive Summary:**
+- **Major Theme 1**: [Description of how this idea has developed or persisted over the week]. 
+- **Major Theme 2**: [Insights into a secondary trend or shift in focus].
+- **Emerging Pattern**: [Key observations about how my thoughts are changing or evolving].
 ---
 
 Focus on clarity, synthesis, and uncovering meaningful insights from today's notes.

@@ -1,3 +1,5 @@
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import json
 import logging
 from datetime import datetime, timedelta
@@ -8,6 +10,7 @@ import requests
 import firebase_admin
 import traceback
 import functions_framework
+import smtplib
 
 from firebase_admin import credentials, firestore
 from google.oauth2 import id_token
@@ -15,6 +18,8 @@ from flask import Flask, Request, Response, request, jsonify
 from flask_cors import CORS
 from google.cloud.firestore_v1.query_results import QueryResultsList
 from google.cloud.firestore_v1.base_document import DocumentSnapshot
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
 
 from model_interfaces import generated_content
 import model_interfaces.gemini_interface as gemini_interface
@@ -32,6 +37,12 @@ if not firebase_admin._apps:
     cred = credentials.ApplicationDefault()
     firebase_admin.initialize_app(cred)
 db = firestore.client()
+
+# Gmail API credentials
+SERVICE_ACCOUNT_FILE = "jarvis-8ce89-20e9b84f7ab8.json"  # Add your service account file
+SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+service = build('gmail', 'v1', credentials=credentials)
 
 def verify_oauth_token(token: str) -> Union[dict, None]:
     """Verify Google OAuth token and create user if needed."""
@@ -245,6 +256,31 @@ def get_latest_summary(request):
     response = jsonify({'summary': formatted_summary})
     response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
     return response, 200
+
+@functions_framework.http
+def send_daily_digest(request):
+    try:
+        if request.headers.get('X-CloudScheduler') is None:
+            return
+    
+        users_ref = db.collection('users')
+        users_stream = users_ref.stream()
+        all_users = []
+        for user in users_stream:
+            all_users.append(user.to_dict())
+
+        for user in all_users:
+            daily_digest = generated_content.construct_daily_digest(user['google_user_id'])
+            message = MIMEMultipart()
+            message["From"] = user['email']
+            message["To"] = user['email']
+            message["Subject"] = "Your Daily Digest"
+            message.attach(MIMEText(daily_digest, "plain"))
+
+        return "Email sent successfully!", 200
+
+    except Exception as e:
+        return f"Failed to send email: {str(e)}", 500
 
 def query_firestore_for_latest_summary() -> Union[dict, None]:
     """Get most recent summary from Firestore."""
