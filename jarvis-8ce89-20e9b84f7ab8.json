@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "jarvis-8ce89",
+  "private_key_id": "20e9b84f7ab845cda81d66e39750144e07ba1032",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCaXlCOAscPF2nt\ndlXUHywVNWOgAnSNwa7mItZqd7w3N2iWp7VuaLvoV+orutNoh+r89mJRGPYodKz+\n1ERcUbgAv6IcY8GBqsAkXmG72HUY20Ex2NLoo9OF+n39b2A80Bb4Gz4R+Ya0SpNB\nx/33k4ChvSlw/kaflO8gRWS46JArExdMWbyNpzE7gylKFGnoGaA2TJGIxLLh3ZkG\n8y+7+rqCoxXzuZVUWMUiA6rrH82kJAhzKoSFxJS5K81LntD8VQbzIyC4w2jz9SNT\n07BfgM687Ai9e7Pmjoc6rYP/UH6wXU+iC/GHENvm6gs7wuvn0cYvZaKv7g99e34X\nG/T9d/LHAgMBAAECggEAFEG8IGaM6JYR+G9G5AcTKdVPtXedA90ermRz7pS3xicn\nOl3XmR11Sw/+Uq65f0YWuAs865dy9ewZp3cDYXn3w2FiTIdqpTFa9WrNOHE3LIPZ\nEkl5o72bzEEKt28eGdzUpsosYv9zhcUjfcZYtVxNzOudvI4hhl9s4bc5eGpMQNqU\nMivL3xIWVUgPISeTvqL3FwxsIbkqFUCPnPRureXMj87hFLhpw6ewkOSaZe1jmFFn\n1Dc6/BL15bgzfwMdgAdy5OfG+Rp1jfAScw6cmWIgbQIcr38+hIeuSb3xke7FNRQn\no+c1TZlTs06JJi989D03bOW0EzYKc2vMlApGA6PewQKBgQDUeDxnQ7/BU2qmkCMh\nVL8ohx0Aca1LE8FVxOK6k365iNlQ0aNwopgTprt4Lcxd11bSMVHNaDh6pzeX9yxs\nAVjzdAXSP280WbOt0ZE+I6ukTfnIndfEEBtlluSYtSY1JOgIohnwFO5ulhUINWFL\n8rNLWvmFBEDkBydN10BGcCnB1QKBgQC5/r3lwQjanKdDWFgDkXyW0hZ3qhqgSpQj\n5cirYnUGSTluV9yPBYjXzgAunajiLNxy0MIdp7q377fsPpRQaCS2BCerUng0WkRO\nH2ZqYBFcd+uIO2K+6CAsyjzLYfgQwMLFNkaCX9ao82oxUlQyEHDEWhqkqyMeUi8J\n6eyHUjDUKwKBgQCTo8k1aJqC2FgvzdDbhGwg2WKJwHROyzd5RgrW408X1cRMqKAN\n0K4kWaPDau+r9cra3HKfbWBxumijLJqtonIRGfpBktrPYdW9XvayW08WKSj9AtG/\n6AFhomzOwHIAU9j4xsuHTMQyDBApWA54G/oCzwC8Max1x5LEQGLlj2M00QKBgFYt\nJpU2TEDmBkWYwCbfGMfUjV5ibTXJeDvtsn1d//SqprZudR27Jb0/kCwJFn+842M7\nQEV3OncQ1bnbAOMEbcX7xNmHO3SeQjmkKNKusjySv4l+YnErogS+q05clRBGD7hK\nPn8XoqDjL1es2p/bqDQBv4h+VqYs0+iW/uVv+nnDAoGAazFvi10gN48UyYN7P/eB\nCXk8XWjOZ6xVZfICEVc9uQ3OJqRk9mh+PRKnt+7swVdG/TStWiVWoM5gY+yStOfL\n/s2hCsWVEu5dl6WW6bXc2xwY73MjMNPNuc0Gc8sf3WUWkI5HyGUgPiE5n5Dz67nj\n1kU2ZIE4E2zD5nDcLG+Rqg0=\n-----END PRIVATE KEY-----\n",
+  "client_email": "console-email-agent@jarvis-8ce89.iam.gserviceaccount.com",
+  "client_id": "117982148023876118443",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/console-email-agent%40jarvis-8ce89.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
