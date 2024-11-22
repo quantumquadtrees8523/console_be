@@ -14,18 +14,25 @@ reading this should make me think that I wrote this output myself.
 - Begin describing the key categories and themes that have been developing in my head today.
 
 # Output Format
-Your response must be structured in **Markdown** and divided into exactly the following two parts (Note that `Notable Highlights` is optional):
+Your response must be structured in **Markdown** and divided into exactly the following two parts:
 ---
 
 **Notable Highlights:**
 1. [Highlight 1: Specific insight or reflection tied to a theme].  
 2. [Highlight 2: Another noteworthy idea or trend].  
 3. [Highlight 3: Additional thought worth reflecting on].
+...
+n. [Highlight n: Additional thought. You should reference as many as you think are important].
 
 **Comprehensive Summary:**
 - **Major Theme 1**: [Description of how this idea has developed or persisted over the week]. 
 - **Major Theme 2**: [Insights into a secondary trend or shift in focus].
+...
+- **Major Theme n**. [You should reference as many as you think are important].
 - **Emerging Pattern**: [Key observations about how my thoughts are changing or evolving].
+...
+- **Emerging Pattern n**. [You should reference as many as you think are important].
+
 ---
 
 Focus on clarity, synthesis, and uncovering meaningful insights from today's notes.
@@ -74,7 +81,6 @@ Example Output:
 
 Focus on actionable clarity and alignment with recent thoughts.
 """
-
 
 # I want summaries of my thoughts over the course of the past week.
 YOUR_WEEK_IN_REVIEW_PROMPT = """
@@ -204,3 +210,32 @@ Focus on creating a cohesive narrative from fragmented thoughts, ensuring that i
 GET_NOTE_HEADLINE = """
 Summarize the input in a single sentence from the perspective of the writer. The output should be friendly and readable and no more than 10 words. 
 """
+
+
+def get_match_concept_prompt(note, concepts_str):
+   return f"""
+   You are given the following concepts:
+   {concepts_str}
+
+   Your job is to read the given note and return the concept that most closely
+   matches that which the note pertains to.
+
+   If none of the concepts in the bulleted list above resonates with the note
+   then return a brand new concept description that best describes the note.
+
+   Your output should be one of the concepts given above OR a descriptor for
+   the new concept.
+
+   In the event of gibberish or something that does not have much meaning by itself
+   label it `miscellaneous`.
+
+   Some examples of newly created concepts:
+      1. Real Estate
+      2. Journaling
+      3. Chores
+      etc...
+
+   Note that concepts are not finite. They can be anything.
+   Here is the note:
+   {note}
+   """

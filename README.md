@@ -23,6 +23,7 @@ gcloud functions deploy get_latest_summary \
 functions-framework --target=get_from_firestore --port=8080
 functions-framework --target=write_to_firestore --port=8080
 functions-framework --target=get_latest_summary --port=8080
+functions-framework --target=get_daily_digest --port=8080
 
 
 # Python Version + Virtual Environment
@@ -38,23 +39,3 @@ Activate by: `$ source ~/.console_venv/bin/activate`
 You'll want to set python path in the virtual environment so that everything is viewable. Right now it's being set manually.
 There is a world very soon where you should just update the virtual environment startup script.
 `$ export PYTHONPATH=/Users/suryaduggirala/projects/console_be:$PYTHONPATH`
-
-
-# TODO: Create Cloud schedulers
-gcloud scheduler jobs create http write-to-firestore-keep-warm-job \
-    --schedule "*/1 * * * *" \
-    --uri "https://us-central1-jarvis-8ce89.cloudfunctions.net/write_to_firestore" \
-    --http-method POST
-    --location "us-central1"
-
-
-gcloud scheduler jobs create http get-latest-summary-keep-warm-job \
-    --schedule "*/5 * * * *" \
-    --uri "https://REGION-PROJECT.cloudfunctions.net/FUNCTION_NAME" \
-    --http-method GET
-
-
-gcloud scheduler jobs create http get-from-firestore-keep-warm-job \
-    --schedule "*/5 * * * *" \
-    --uri "https://REGION-PROJECT.cloudfunctions.net/FUNCTION_NAME" \
-    --http-method GET

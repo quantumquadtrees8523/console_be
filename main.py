@@ -24,6 +24,7 @@ from googleapiclient.discovery import build
 from model_interfaces import generated_content
 import model_interfaces.gemini_interface as gemini_interface
 import model_interfaces.openai_interface as openai_interface
+from prompts import get_match_concept_prompt
 
 # Initialize Flask app and logging
 # app = Flask(__name__)
@@ -125,7 +126,7 @@ def handle_cors_preflight(allowed_methods: str) -> Response:
 def handle_request_auth() -> Union[str, tuple]:
     """Authenticate request and return Google user ID."""
     logger.debug("Handling request authentication")
-    token = request.headers.get('Authorization')
+    token = request.headers.get('Authorization');
     
     if not token:
         response = jsonify({'error': 'Missing OAuth token'})
@@ -148,6 +149,7 @@ def handle_request_auth() -> Union[str, tuple]:
         return response, 401
         
     return google_user_id
+
 
 @functions_framework.http
 def get_from_firestore(request):
@@ -173,6 +175,7 @@ def get_from_firestore(request):
     response = jsonify({'notes': notes})
     response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
     return response, 200
+
 
 @functions_framework.http
 def write_to_firestore(request):
@@ -232,6 +235,7 @@ def write_to_firestore(request):
         response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
         return response, 500
 
+
 @functions_framework.http
 def get_latest_summary(request):
     """Get most recent summary."""
@@ -257,30 +261,60 @@ def get_latest_summary(request):
     response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
     return response, 200
 
+
 @functions_framework.http
-def send_daily_digest(request):
+def get_daily_digest(request):
+    """Send daily digest emails to all users."""
+    logger.debug("Getting daily digest")
+    if request.method == 'OPTIONS':
+        return handle_cors_preflight('GET, OPTIONS')
+
+    auth_result = handle_request_auth()
+    if isinstance(auth_result, tuple):
+        return auth_result
+    google_user_id = auth_result
+
     try:
-        if request.headers.get('X-CloudScheduler') is None:
-            return
-    
-        users_ref = db.collection('users')
-        users_stream = users_ref.stream()
-        all_users = []
-        for user in users_stream:
-            all_users.append(user.to_dict())
+        # Check if daily digest already sent today
+        user_tz = get_user_timezone(request)
+        current_time = datetime.now(timezone(user_tz))
+        start_of_day = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_of_day = current_time.replace(hour=23, minute=59, second=59, microsecond=999999)
 
-        for user in all_users:
-            daily_digest = generated_content.construct_daily_digest(user['google_user_id'])
-            message = MIMEMultipart()
-            message["From"] = user['email']
-            message["To"] = user['email']
-            message["Subject"] = "Your Daily Digest"
-            message.attach(MIMEText(daily_digest, "plain"))
-
-        return "Email sent successfully!", 200
+        digest_query = (db.collection("daily_digest")
+                       .where('google_user_id', '==', google_user_id)
+                       .where("date_time", ">=", start_of_day)
+                       .where("date_time", "<=", end_of_day)
+                       .limit(1)
+                       .get())
+        
+        logger.info(len(digest_query))
+        if len(digest_query) == 0:
+            daily_digest = generated_content.construct_daily_digest(google_user_id)
+            # Store the daily digest in Firestore
+            db.collection("daily_digest").add({
+                'digest': daily_digest,
+                'date_time': current_time,
+                'google_user_id': google_user_id
+            })
+        else:
+            most_recent_digest = db.collection("daily_digest") \
+                                .where('google_user_id', '==', google_user_id) \
+                                .order_by("date_time", direction="DESCENDING") \
+                                .limit(1) \
+                                .get()
+            logger.info(most_recent_digest[0])
+            daily_digest = most_recent_digest[0].get('digest') if most_recent_digest else "No digest available"
+        response = jsonify({'message': daily_digest})
+        response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+        return response, 200
 
     except Exception as e:
-        return f"Failed to send email: {str(e)}", 500
+        logger.error(f"Error in send_daily_digest: {str(e)}")
+        response = jsonify({'error': 'Failed to send email'})
+        response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+        return response, 500
+
 
 def query_firestore_for_latest_summary() -> Union[dict, None]:
     """Get most recent summary from Firestore."""
@@ -288,13 +322,13 @@ def query_firestore_for_latest_summary() -> Union[dict, None]:
     most_recent_summary = db.collection('live_summaries').order_by('date_time', direction='DESCENDING').limit(1).get()
     return most_recent_summary[0].to_dict() if most_recent_summary else None
 
+
 def get_live_summary(google_user_id: str) -> str:
     """Generate live summary of user's recent notes."""
     logger.debug("Generating live summary")
     user_tz = get_user_timezone(request)
     current_time = datetime.now(timezone(user_tz))
     context_summary = generated_content.get_live_summary(google_user_id)
-    # Store new summary
     db.collection('live_summaries').add({
         'summary': context_summary,
         'date_time': current_time,
@@ -325,3 +359,17 @@ def construct_live_summary(current_time: datetime, summary_text: str) -> str:
 
     {summary_text}
     """
+
+
+def get_note_concept(google_user_id, note):
+    # Get all concepts for the user
+    concepts = db.collection('concepts').where('google_user_id', '==', google_user_id).get()
+    concept_object_list = [doc.to_dict() for doc in concepts]
+    concepts = set([concept_object['concept'] for concept_object in concept_object_list if concept_object])
+    concepts_string = "\n- ".join(concepts)
+    # concepts = set(concepts)
+    if concepts_string:
+        concepts_string = "- " + concepts_string
+    prompt = get_match_concept_prompt(note, concepts_string)
+    concept_inference = gemini_interface.predict_text(prompt)
+    return

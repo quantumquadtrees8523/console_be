@@ -1,5 +1,6 @@
 from typing import List
 import firebase_admin
+import time
 
 from datetime import datetime, timedelta
 from pytz import timezone
@@ -32,11 +33,13 @@ def get_past_n_days_notes(google_user_id: str, n: int) -> List[str]:
 def construct_daily_digest(google_user_id: str) -> str:
     """Stitches together the todo list, the week in review, and the next week's outlook."""
     todo_list = get_todo_list(google_user_id, get_past_n_days_notes(google_user_id, 3))
+    time.sleep(1)
     last_week_notes = get_past_n_days_notes(google_user_id, 7)
     week_in_review = get_week_in_review(google_user_id, last_week_notes)
+    time.sleep(1)
     next_week_outlook = get_next_week_outlook(google_user_id, last_week_notes, week_in_review, todo_list)
     return f"""\
-    Your Daily Digest:
+    # Daily Digest:
 
     {todo_list}
 

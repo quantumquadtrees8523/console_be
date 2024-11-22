@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from typing import List, MutableSequence
 from google.cloud import aiplatform
 from google.cloud.aiplatform.gapic import PredictionServiceClient
@@ -22,12 +23,33 @@ MODEL = "gemini-1.5-flash-002"
 client = GenerativeModel(MODEL)
 
 def predict_text(prompt: str) -> str:
-    logger.info("Gemini predicting...")
-    model_response: GenerationResponse = client.generate_content(prompt, generation_config=GenerationConfig(temperature=0.7))
-    logger.info("Gemini response successful!")
-    if "429 Online prediction request quota exceeded for gemini-1.5-flash" in model_response.text:
-        logger.error("Token Limit Exceeded for Gemini Flash")
-    return model_response.text
+    max_retries = 5
+    base_delay = 1  # Start with 1 second delay
+    for attempt in range(max_retries):
+        try:
+            logger.info(f"Gemini predicting... (attempt {attempt + 1}/{max_retries})")
+            model_response: GenerationResponse = client.generate_content(
+                prompt, 
+                generation_config=GenerationConfig(temperature=0.7)
+            )
+            logger.info("Gemini response successful!")
+            logger.info(model_response.text)
+            return model_response.text
+            
+        except Exception as e:
+            if "429" in str(e) or "quota exceeded" in str(e).lower():
+                if attempt == max_retries - 1:
+                    logger.error(f"Max retries ({max_retries}) exceeded for Gemini API")
+                    raise
+                    
+                delay = base_delay * (2 ** attempt)  # Exponential backoff
+                logger.warning(f"Rate limit hit, retrying in {delay} seconds...")
+                time.sleep(delay)
+            else:
+                logger.error(f"Unexpected error from Gemini API: {e}")
+                raise
+    logger.error("Could not predict.")
+    return ""
 
 def summarize(notes: List[str]) -> str:
     try:
