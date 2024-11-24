@@ -208,7 +208,17 @@ Focus on creating a cohesive narrative from fragmented thoughts, ensuring that i
 
 
 GET_NOTE_HEADLINE = """
-Summarize the input in a single sentence from the perspective of the writer. The output should be friendly and readable and no more than 10 words. 
+Summarize the input in a single sentence from the perspective of the writer. The output should be friendly and readable and no more than 7 words.
+Fewer words is better. Keep the same slang/vernacular/mood/tone that the note is input as.
+
+For example:
+The headline for the note:
+```That art is tight!```
+
+Should still use the word `tight`. An input written in slang needs a headline that maintains that slang.
+
+Pay special attention to the mood and the vernacular used. If the input uses slang then the headline must also be in slang. If there is no slang
+then answer with your best approximation of what the note is trying to say.
 """
 
 
