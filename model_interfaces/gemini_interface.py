@@ -42,7 +42,7 @@ def predict_text(prompt: str) -> str:
                     logger.error(f"Max retries ({max_retries}) exceeded for Gemini API")
                     raise
                     
-                delay = base_delay * (2 ** attempt)  # Exponential backoff
+                delay = base_delay * (5 ** attempt)  # Exponential backoff
                 logger.warning(f"Rate limit hit, retrying in {delay} seconds...")
                 time.sleep(delay)
             else:

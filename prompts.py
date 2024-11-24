@@ -223,19 +223,16 @@ def get_match_concept_prompt(note, concepts_str):
    If none of the concepts in the bulleted list above resonates with the note
    then return a brand new concept description that best describes the note.
 
-   Your output should be one of the concepts given above OR a descriptor for
-   the new concept.
+   Your output should be exactly one of the concepts given above OR a brand new description
+   of the new concept. The description should be about a paragraph maximum.
 
    In the event of gibberish or something that does not have much meaning by itself
    label it `miscellaneous`.
-
-   Some examples of newly created concepts:
-      1. Real Estate
-      2. Journaling
-      3. Chores
-      etc...
 
    Note that concepts are not finite. They can be anything.
    Here is the note:
    {note}
    """
+
+
+GET_TABLE_PROMPT = "You are an experienced grocery store manager. Give me a 5 row dummy grocery inventory data in the form of a markdown table."

@@ -40,10 +40,10 @@ if not firebase_admin._apps:
 db = firestore.client()
 
 # Gmail API credentials
-SERVICE_ACCOUNT_FILE = "jarvis-8ce89-20e9b84f7ab8.json"  # Add your service account file
-SCOPES = ['https://www.googleapis.com/auth/gmail.send']
-credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-service = build('gmail', 'v1', credentials=credentials)
+# SERVICE_ACCOUNT_FILE = "jarvis-8ce89-20e9b84f7ab8.json"  # Add your service account file
+# SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+# credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+# service = build('gmail', 'v1', credentials=credentials)
 
 def verify_oauth_token(token: str) -> Union[dict, None]:
     """Verify Google OAuth token and create user if needed."""
@@ -51,7 +51,11 @@ def verify_oauth_token(token: str) -> Union[dict, None]:
     try:
         token_info_url = f"https://oauth2.googleapis.com/tokeninfo?access_token={token}"
         response = requests.get(token_info_url)
-
+        
+        if response.status_code != 200:
+            token_info_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={token}"
+            response = requests.get(token_info_url)
+        
         if response.status_code != 200:
             logger.warning(f"Token verification failed: {response.content}")
             return None
@@ -118,7 +122,7 @@ def handle_cors_preflight(allowed_methods: str) -> Response:
     """Handle CORS preflight requests."""
     logger.debug("Handling CORS preflight")
     response = jsonify({'message': 'CORS preflight successful'})
-    response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+    response.headers.add('Access-Control-Allow-Origin', '*')
     response.headers.add('Access-Control-Allow-Methods', allowed_methods)
     response.headers.add('Access-Control-Allow-Headers', 'Authorization, Content-Type')
     return response
@@ -130,7 +134,7 @@ def handle_request_auth() -> Union[str, tuple]:
     
     if not token:
         response = jsonify({'error': 'Missing OAuth token'})
-        response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+        response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 401
 
     if token.startswith('Bearer '):
@@ -139,13 +143,13 @@ def handle_request_auth() -> Union[str, tuple]:
     google_token_info = verify_oauth_token(token)
     if not google_token_info:
         response = jsonify({'error': 'Invalid OAuth token'})
-        response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+        response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 400
 
     google_user_id = google_token_info.get('sub')
     if not google_user_id:
         response = jsonify({'error': 'Invalid OAuth token'})
-        response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+        response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 401
         
     return google_user_id
@@ -153,7 +157,7 @@ def handle_request_auth() -> Union[str, tuple]:
 
 @functions_framework.http
 def get_from_firestore(request):
-    """Get notes from Firestore for the last 30 days."""
+    """Get notes from Firestore for the last 10 days."""
     logger.debug("Getting notes from Firestore")
     if request.method == 'OPTIONS':
         return handle_cors_preflight('GET, OPTIONS')
@@ -163,17 +167,17 @@ def get_from_firestore(request):
         return auth_result
     google_user_id = auth_result
 
-    thirty_days_ago = datetime.now() - timedelta(days=30)
+    ten_days_ago = datetime.now() - timedelta(days=10)
     notes_query = (db.collection('chrome_extension_notes')
                     .where('google_user_id', '==', google_user_id)
-                    .where('date_time', '>=', thirty_days_ago)
+                    .where('date_time', '>=', ten_days_ago)
                     .where('google_user_id', '==', google_user_id)
                     .order_by('date_time', 'DESCENDING')
                     .get())
     
     notes = [note.to_dict() for note in notes_query]
     response = jsonify({'notes': notes})
-    response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+    response.headers.add('Access-Control-Allow-Origin', '*')
     return response, 200
 
 
@@ -194,7 +198,7 @@ def write_to_firestore(request):
         if not request_data or 'note' not in request_data or 'timestamp' not in request_data:
             logger.error('Missing required fields: note and timestamp')
             response = jsonify({'error': 'Missing required fields: note and timestamp'})
-            response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+            response.headers.add('Access-Control-Allow-Origin', '*')
             return response, 400
 
         user_tz = get_user_timezone(request)
@@ -226,13 +230,13 @@ def write_to_firestore(request):
 
         live_summary = get_live_summary(google_user_id)
         response = jsonify({'message': live_summary})
-        response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+        response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 200
 
     except Exception as e:
         logger.error(f"Error in write_to_firestore: {traceback.format_exc()}")
         response = jsonify({'error': 'Failed to process request'})
-        response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+        response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 500
 
 
@@ -246,11 +250,12 @@ def get_latest_summary(request):
     auth_result = handle_request_auth()
     if isinstance(auth_result, tuple):
         return auth_result
+    google_user_id = auth_result
 
-    summary_object = query_firestore_for_latest_summary()
+    summary_object = query_firestore_for_latest_summary(google_user_id)
     if not summary_object:
         response = jsonify({'summary': "No summary available please try again later (server side error)"})
-        response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+        response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 404
     
     user_tz = get_user_timezone(request)
@@ -258,7 +263,7 @@ def get_latest_summary(request):
     formatted_summary = construct_live_summary(current_time, summary_object['summary'])
     
     response = jsonify({'summary': formatted_summary})
-    response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+    response.headers.add('Access-Control-Allow-Origin', '*')
     return response, 200
 
 
@@ -288,7 +293,6 @@ def get_daily_digest(request):
                        .limit(1)
                        .get())
         
-        logger.info(len(digest_query))
         if len(digest_query) == 0:
             daily_digest = generated_content.construct_daily_digest(google_user_id)
             # Store the daily digest in Firestore
@@ -303,23 +307,22 @@ def get_daily_digest(request):
                                 .order_by("date_time", direction="DESCENDING") \
                                 .limit(1) \
                                 .get()
-            logger.info(most_recent_digest[0])
             daily_digest = most_recent_digest[0].get('digest') if most_recent_digest else "No digest available"
         response = jsonify({'message': daily_digest})
-        response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+        response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 200
 
     except Exception as e:
         logger.error(f"Error in send_daily_digest: {str(e)}")
         response = jsonify({'error': 'Failed to send email'})
-        response.headers.add('Access-Control-Allow-Origin', 'chrome-extension://cdjhdcbiabimlbcjhdhojcjhedbfeekk')
+        response.headers.add('Access-Control-Allow-Origin', '*')
         return response, 500
 
 
-def query_firestore_for_latest_summary() -> Union[dict, None]:
+def query_firestore_for_latest_summary(google_user_id: str) -> Union[dict, None]:
     """Get most recent summary from Firestore."""
     logger.debug("Querying Firestore for latest summary")
-    most_recent_summary = db.collection('live_summaries').order_by('date_time', direction='DESCENDING').limit(1).get()
+    most_recent_summary = db.collection('live_summaries').where('google_user_id', '==', google_user_id).order_by('date_time', direction='DESCENDING').limit(1).get()
     return most_recent_summary[0].to_dict() if most_recent_summary else None
 
 

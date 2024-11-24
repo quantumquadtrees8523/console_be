@@ -7,7 +7,7 @@ from pytz import timezone
 from firebase_admin import credentials, firestore
 
 from model_interfaces.gemini_interface import predict_text
-from prompts import LIVE_SUMMARY_PROMPT, TODAYS_TODO_PROMPT, YOUR_WEEK_AHEAD_PROMPT, YOUR_WEEK_IN_REVIEW_PROMPT
+from prompts import LIVE_SUMMARY_PROMPT, TODAYS_TODO_PROMPT, YOUR_WEEK_AHEAD_PROMPT, YOUR_WEEK_IN_REVIEW_PROMPT, get_match_concept_prompt
 
 # Initialize Firestore DB
 if not firebase_admin._apps:
@@ -69,3 +69,14 @@ def get_live_summary(google_user_id: str) -> str:
     todays_notes = get_past_n_days_notes(google_user_id, 1)
     full_prompt = LIVE_SUMMARY_PROMPT + "\n\n" + "\n".join(todays_notes)
     return predict_text(full_prompt)
+
+
+def tag_note_with_concept(google_user_id, note):
+    concepts_ref = db.collection("concepts")
+    concepts_query = concepts_ref.where("google_user_id", "==", google_user_id)
+    concepts = [doc.to_dict()["concept"] for doc in concepts_query.stream()]
+    concepts_str = "\n- ".join(concepts)
+    if concepts_str:
+        concepts_str = "- " + concepts_str
+    prompt = get_match_concept_prompt(note, concepts_str)
+    return predict_text(prompt)

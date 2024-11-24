@@ -24,4 +24,11 @@ gcloud functions deploy get_latest_summary \
     --allow-unauthenticated \
     --memory=1GiB
 
+echo "Deploying get_daily_digest function..."
+gcloud functions deploy get_daily_digest \
+    --runtime python310 \
+    --trigger-http \
+    --allow-unauthenticated \
+    --memory=1GiB
+
 set +x
